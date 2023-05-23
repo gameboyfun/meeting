@@ -2,7 +2,7 @@
 
 import { create } from "zustand";
 
-type Room = {
+export type Room = {
   id: number;
   name: string;
   capacity: number;

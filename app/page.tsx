@@ -8,6 +8,8 @@ type ReservationFormProps = {
   handleDateChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   selectedRoomId: number;
   handleRoomChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
+  capacity: number;
+  handleCapacityChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
   reservedBy: string;
   setReservedBy: (value: string) => void;
   handleReservation: () => void;
@@ -18,6 +20,8 @@ function ReservationForm({
   handleDateChange,
   selectedRoomId,
   handleRoomChange,
+  capacity,
+  handleCapacityChange,
   reservedBy,
   setReservedBy,
   handleReservation,
@@ -30,9 +34,11 @@ function ReservationForm({
     .filter((reservation) => reservation.date === selectedDate)
     .map((reservation) => reservation.roomId);
 
-  // Filter the available rooms by excluding the reserved room IDs
+  // Filter the available rooms by excluding the reserved room IDs and capacity
   const filteredRooms = availableRooms.filter(
-    (room) => !reservedRoomIds.includes(room.id)
+    (room) =>
+      !reservedRoomIds.includes(room.id) &&
+      (capacity === 0 || room.capacity >= capacity)
   );
 
   return (
@@ -53,6 +59,15 @@ function ReservationForm({
         </select>
       </div>
       <div>
+        <label>Capacity:</label>
+        <select value={capacity} onChange={handleCapacityChange}>
+          <option value={0}>Any</option>
+          <option value={5}>5 people</option>
+          <option value={10}>10 people</option>
+          <option value={15}>15 people</option>
+        </select>
+      </div>
+      <div>
         <label>Reserved By:</label>
         <input
           type="text"
@@ -68,10 +83,10 @@ function ReservationForm({
   );
 }
 
-
 export default function Home() {
   const [selectedRoomId, setSelectedRoomId] = useState<number>(0);
   const [selectedDate, setSelectedDate] = useState<string>("");
+  const [capacity, setCapacity] = useState<number>(0);
   const reservations = useStore((state) => state.reservations);
   const addReservation = useStore((state) => state.addReservation);
   const cancelReservation = useStore((state) => state.cancelReservation);
@@ -86,42 +101,55 @@ export default function Home() {
     setSelectedRoomId(parseInt(e.target.value));
   };
 
+  const handleCapacityChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setCapacity(parseInt(e.target.value));
+  };
+
   const handleReservation = () => {
-    // Check if a room, date, and reservedBy are entered
-    if (selectedRoomId === 0 || selectedDate === "" || reservedBy === "") {
-      alert("Please select a room, date, and enter the name");
+    if (
+      selectedRoomId === 0 ||
+      selectedDate === "" ||
+      capacity === 0 ||
+      reservedBy === ""
+    ) {
+      alert("Please select a room, date, capacity, and enter the name");
       return;
     }
-  
-    // Check if the selected room is already reserved on the selected date
+
     const isRoomAvailable = !reservations.some(
       (reservation) =>
-        reservation.roomId === selectedRoomId && reservation.date === selectedDate
+        reservation.roomId === selectedRoomId &&
+        reservation.date === selectedDate
     );
     if (!isRoomAvailable) {
       alert("Selected room is not available on the selected date");
       return;
     }
-  
-    // Make the reservation
+
     const newReservation: Reservation = {
       id: Date.now(),
       roomId: selectedRoomId,
       date: selectedDate,
       reservedBy: reservedBy,
     };
-  
-    // Add the reservation using the store
+
+    const selectedRoom = availableRooms.find(
+      (room) => room.id === selectedRoomId
+    );
+    if (!selectedRoom || selectedRoom.capacity < capacity) {
+      alert("Selected room does not have the required capacity");
+      return;
+    }
+
     addReservation(newReservation);
-  
-    // Reset the form fields to their initial states
+
     setSelectedRoomId(0);
     setSelectedDate("");
+    setCapacity(0);
     setReservedBy("");
-  
+
     alert("Reservation successful!");
   };
-  
 
   const availableRooms = useStore((state) => state.availableRooms);
 
@@ -146,9 +174,10 @@ export default function Home() {
         handleDateChange={handleDateChange}
         selectedRoomId={selectedRoomId}
         handleRoomChange={handleRoomChange}
+        capacity={capacity}
+        handleCapacityChange={handleCapacityChange}
       />
 
-      {/* Other pages links... */}
     </div>
   );
 }

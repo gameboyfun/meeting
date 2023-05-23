@@ -11,14 +11,12 @@ export default function CancelReservation() {
   const [reservationId, setReservationId] = useState<number>(0);
 
   const handleCancelReservation = () => {
-    // Find the reservation with the specified ID
     const reservation = reservations.find((reservation) => reservation.id === reservationId);
     if (!reservation) {
       alert("Reservation not found");
       return;
     }
 
-    // Cancel the reservation using the store
     cancelReservation(reservationId);
 
     alert("Reservation canceled successfully!");
